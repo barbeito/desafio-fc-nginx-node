@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - node_net
+    ports:
+      - "8080:80"
+    depends_on:
+      - app
+
+  app:
+    build:
+      context: ./node
+    container_name: app
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 60s node index.js docker-entrypoint.sh
+    networks:
+      - node_net
+    volumes:
+      - ./node:/usr/src/app
+    tty: true
+    depends_on:
+      - db
+
+  db:
+    build: 
+      context: ./mysql
+    container_name: db
+    tty: true
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root@123
+    networks:
+      - node_net
+
+networks:
+  node_net:
+    driver: bridge
